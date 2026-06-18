@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CarClass {
+  ECONOMY
+  BUSINESS
+  EXECUTIVE
+}
+
+enum SeatStatus {
+  AVAILABLE
+  LOCKED
+  BOOKED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+model Train {
+  id        String     @id @default(uuid())
+  name      String
+  code      String     @unique
+  cars      Car[]
+  schedules Schedule[]
+}
+
+model Route {
+  id          String     @id @default(uuid())
+  origin      String
+  destination String
+  distance    Int
+  schedules   Schedule[]
+}
+
+model Schedule {
+  id                 String             @id @default(uuid())
+  train              Train              @relation(fields: [trainId], references: [id])
+  trainId            String
+  route              Route              @relation(fields: [routeId], references: [id])
+  routeId            String
+  departureDate      DateTime
+  departureTime      DateTime
+  arrivalTime        DateTime
+  seatAvailabilities SeatAvailability[]
+  bookings           Booking[]
+}
+
+model Car {
+  id         String   @id @default(uuid())
+  train      Train    @relation(fields: [trainId], references: [id])
+  trainId    String
+  carNumber  Int
+  class      CarClass
+  totalSeats Int
+  seats      Seat[]
+}
+
+model Seat {
+  id             String             @id @default(uuid())
+  car            Car                @relation(fields: [carId], references: [id])
+  carId          String
+  seatNumber     String
+  availabilities SeatAvailability[]
+}
+
+model SeatAvailability {
+  id          String      @id @default(uuid())
+  seat        Seat        @relation(fields: [seatId], references: [id])
+  seatId      String
+  schedule    Schedule    @relation(fields: [scheduleId], references: [id])
+  scheduleId  String
+  status      SeatStatus  @default(AVAILABLE)
+  version     Int         @default(0)
+  lockedUntil DateTime?
+  bookingItem BookingItem?
+
+  @@unique([seatId, scheduleId])
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  userId         String
+  schedule       Schedule      @relation(fields: [scheduleId], references: [id])
+  scheduleId     String
+  status         BookingStatus @default(PENDING)
+  idempotencyKey String        @unique
+  expiresAt      DateTime
+  createdAt      DateTime      @default(now())
+  items          BookingItem[]
+}
+
+model BookingItem {
+  id                 String           @id @default(uuid())
+  booking            Booking          @relation(fields: [bookingId], references: [id])
+  bookingId          String
+  seatAvailability   SeatAvailability @relation(fields: [seatAvailabilityId], references: [id])
+  seatAvailabilityId String           @unique
+  price              Decimal          @db.Decimal(10, 2)
+}
