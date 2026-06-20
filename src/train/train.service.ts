@@ -1,17 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateTrainDto } from './dto/create-train.dto';
+import { UpdateTrainDto } from './dto/update-train.dto';
 
 @Injectable()
 export class TrainService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: { name: string; code: string }) {
-    return this.prisma.train.create({ data });
+  async create(dto: CreateTrainDto) {
+    return this.prisma.train.create({ data: dto });
   }
 
   async findAll() {
     return this.prisma.train.findMany({
-      include: { cars: true }, // sertakan gerbong
+      include: { cars: true },
     });
   }
 
@@ -25,9 +27,9 @@ export class TrainService {
     return train;
   }
 
-  async update(id: string, data: { name?: string; code?: string }) {
-    await this.findOne(id); // pastikan exists dulu
-    return this.prisma.train.update({ where: { id }, data });
+  async update(id: string, dto: UpdateTrainDto) {
+    await this.findOne(id);
+    return this.prisma.train.update({ where: { id }, data: dto });
   }
 
   async remove(id: string) {
