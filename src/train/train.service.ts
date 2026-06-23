@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTrainDto } from './dto/create-train.dto';
 import { UpdateTrainDto } from './dto/update-train.dto';
@@ -8,7 +9,14 @@ export class TrainService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateTrainDto) {
-    return this.prisma.train.create({ data: dto });
+    try {
+      return await this.prisma.train.create({ data: dto });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(`Train with code "${dto.code}" already exists`);
+      }
+      throw error;
+    }
   }
 
   async findAll() {
@@ -29,7 +37,14 @@ export class TrainService {
 
   async update(id: string, dto: UpdateTrainDto) {
     await this.findOne(id);
-    return this.prisma.train.update({ where: { id }, data: dto });
+    try {
+      return await this.prisma.train.update({ where: { id }, data: dto });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(`Train with code "${dto.code}" already exists`);
+      }
+      throw error;
+    }
   }
 
   async remove(id: string) {
