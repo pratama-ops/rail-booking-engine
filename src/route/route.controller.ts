@@ -1,15 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { RouteService } from './route.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
 
-@Controller('route')
+@Controller('routes')
 export class RouteController {
   constructor(private readonly routeService: RouteService) {}
 
   @Post()
-  create(@Body() createRouteDto: CreateRouteDto) {
-    return this.routeService.create(createRouteDto);
+  create(@Body() dto: CreateRouteDto) {
+    return this.routeService.create(dto);
   }
 
   @Get()
@@ -19,16 +19,16 @@ export class RouteController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.routeService.findOne(+id);
+    return this.routeService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRouteDto: UpdateRouteDto) {
-    return this.routeService.update(+id, updateRouteDto);
+  @Put(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateRouteDto) {
+    return this.routeService.update(id, dto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.routeService.remove(+id);
+    return this.routeService.remove(id);
   }
 }
