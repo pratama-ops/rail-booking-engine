@@ -1,4 +1,7 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType, OmitType } from '@nestjs/mapped-types';
 import { CreateScheduleDto } from './create-schedule.dto';
 
-export class UpdateScheduleDto extends PartialType(CreateScheduleDto) {}
+// trainId dan routeId tidak boleh diubah setelah schedule dibuat
+export class UpdateScheduleDto extends PartialType(
+  OmitType(CreateScheduleDto, ['trainId', 'routeId'] as const),
+) {}
