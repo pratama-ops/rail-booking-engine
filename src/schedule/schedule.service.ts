@@ -4,13 +4,28 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Schedule, Train, Route, SeatAvailability, Seat, Car } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
+import { CACHE_KEYS, CacheService, TTL } from 'src/cache/cache.service';
+import { promises } from 'dns';
+
+// definisikan tipe lengkap untuk schedule dengan include-nya
+type ScheduleWithRelations = Schedule & {
+  train: Train;
+  route: Route;
+  seatAvailabilities: (SeatAvailability & {
+    seat: Seat & { car: Car };
+  })[];
+};
 
 @Injectable()
 export class ScheduleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   async create(dto: CreateScheduleDto) {
     // validasi train exists
@@ -87,7 +102,14 @@ export class ScheduleService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<ScheduleWithRelations> {
+    const cacheKey = CACHE_KEYS.scheduleDetail(id);
+
+    // cek cache dulu sebelum ke db
+    const cached = await this.cache.get<ScheduleWithRelations>(cacheKey); //kasih generic type
+    if (cached) return cached; //cache hit, tidak perlu query ke db
+
+    //cache miss, query ke db
     const schedule = await this.prisma.schedule.findUnique({
       where: { id },
       include: {
@@ -100,6 +122,9 @@ export class ScheduleService {
     });
 
     if (!schedule) throw new NotFoundException(`Schedule ${id} not found`);
+
+    //simpan ke cache untuk next request yg datang
+    await this.cache.set(cacheKey, schedule, TTL.SCHEDULE_DETAIL);
     return schedule;
   }
 
@@ -117,7 +142,7 @@ export class ScheduleService {
       }
     }
 
-    return this.prisma.schedule.update({
+     const updated = await this.prisma.schedule.update({
       where: { id },
       data: {
         ...(dto.departureDate && { departureDate: new Date(dto.departureDate) }),
@@ -125,12 +150,19 @@ export class ScheduleService {
         ...(dto.arrivalTime && { arrivalTime: new Date(dto.arrivalTime) }),
       },
     });
+
+    //invalidate cache karena data sudah berubah
+    await this.cache.del(CACHE_KEYS.scheduleDetail(id));
+    return updated;
   }
 
   async remove(id: string) {
     await this.findOne(id);
     try {
-      return await this.prisma.schedule.delete({ where: { id } });
+      const deleted = await this.prisma.schedule.delete({ where: { id } });
+      //invalidate cache karena schedule sdh dihapus
+      await this.cache.del(CACHE_KEYS.scheduleDetail(id));
+      return deleted;
     } catch (error: any) {
       if (error.code === 'P2003') {
         throw new ConflictException(
