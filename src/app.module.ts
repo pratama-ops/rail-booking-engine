@@ -9,6 +9,7 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { BookingModule } from './booking/booking.module';
 import { BullModule } from '@nestjs/bullmq';
 import { CacheModule } from './cache/cache.module';
+import { WaitingRoomModule } from './waiting-room/waiting-room.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CacheModule } from './cache/cache.module';
         port: parseInt(process.env.REDIS_PORT ?? '6379'),
       },
     }),
+    WaitingRoomModule,
   ],
   controllers: [AppController],
   providers: [AppService],
