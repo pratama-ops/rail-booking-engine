@@ -8,12 +8,14 @@ import { RouteModule } from './route/route.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { BookingModule } from './booking/booking.module';
 import { BullModule } from '@nestjs/bullmq';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
     PrismaModule,
     TrainModule,
     CarModule,
+    CacheModule,
     RouteModule,
     ScheduleModule,
     BookingModule,
