@@ -7,6 +7,11 @@ export class CreateBookingDto {
   @IsNotEmpty()
   userId: string; // nanti diganti JWT auth, sekarang manual dulu
 
+  @ApiProperty({ example: 'uuid-schedule' })
+  @IsUUID()
+  @IsNotEmpty()
+  scheduleId: string;
+
   @ApiProperty({ example: 'uuid-seat-availability' })
   @IsUUID()
   @IsNotEmpty()

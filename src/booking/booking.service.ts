@@ -11,6 +11,7 @@ import { CacheService, CACHE_KEYS, TTL } from '../cache/cache.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { SeatStatus, BookingStatus } from '@prisma/client';
 import { BOOKING_QUEUE, BookingExpiryJobData } from './processor/booking-expiry.processor';
+import { WaitingRoomService } from 'src/waiting-room/waiting-room.service';
 
 const LOCK_DURATION_MINUTES = 10;
 const BOOKING_EXPIRY_MINUTES = 10;
@@ -20,10 +21,16 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
+    private readonly waitingroom: WaitingRoomService,
     @InjectQueue(BOOKING_QUEUE) private readonly bookingQueue: Queue,
   ) {}
 
   async create(dto: CreateBookingDto) {
+    //Check whether the user has an active slot or not
+    const roomStatus = await this.waitingroom.getStatus(
+      dto.scheduleId,
+      dto.userId
+    )
     // cek idempotency dulu
     const existingBooking = await this.prisma.booking.findUnique({
       where: { idempotencyKey: dto.idempotencyKey },
