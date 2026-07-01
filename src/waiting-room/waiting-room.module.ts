@@ -5,6 +5,6 @@ import { WaitingRoomController } from './waiting-room.controller';
 @Module({
   controllers: [WaitingRoomController],
   providers: [WaitingRoomService],
-  exports: [WaitingRoomService], // di-export supaya BookingService bisa pakai
+  exports: [WaitingRoomService],
 })
 export class WaitingRoomModule {}
